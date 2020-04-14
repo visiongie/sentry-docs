@@ -14,7 +14,8 @@ In addition to using [`beforeSend`]({% link _documentation/data-management/sensi
 
 **Advanced Data Scrubbing is available only if your organization is enabled as an Early Adopter.** To enable this option, navigate to your organization's settings and enable the "Early Adopter" option. Turning on this option allows access to features prior to full release, and can be disabled at any time.
 
-Early adopters have access to a new option ("Data Privacy Rules") in both organization settings as well as the setting of each project.
+Early adopters have access to a new option in both organization settings as well as the setting of each project. Go to your project- or organization-settings and click _Data Privacy_ (or _Security
+and Privacy_) in the sidebar. Scrolling down, you will find a new section _Data Privacy Rules_.
 
 Note that everything you configure there will have direct impact on all new events, just as all the other data privacy-related settings do. However, it is not possible to break or undo any other data privacy settings that you may have configured. In other words, it is only possible to accidentally remove too much data, not too little.
 
@@ -22,14 +23,12 @@ If you have any questions related to this feature, feel free to contact us at `m
 
 ## A Basic Example
 
-Go to your project- or organization-settings and click _Data Privacy_/_Security
-and Privacy_ in the sidebar. Scrolling down, you will find a new section _Data
-Privacy Rules_.
+Go to your project- or organization-settings and click _Data Privacy_ (or _Security and Privacy_) in the sidebar. Scrolling down, you will find a new section _Data Privacy Rules_.
 
 Click on _Add Rule_. This already adds a very simple rule:
 
 ```
-[Mask] [credit card numbers] from [$string]
+[Mask] [credit card numbers] from [    ]
 ```
 
 As soon as you hit _Save_, we will attempt to find all creditcard numbers in your events going forward, and replace them with a series of `******`, keeping only the last 4 digits.
@@ -45,10 +44,11 @@ Rules generally consist of three parts:
 - _Remove_: Remove the entire field. We may choose to either set it to `null`, remove it entirely or replace it with an empty string depending on technical constraints.
 - _Mask_: Replace all characters with `*`. For creditcards this replaces everything but the last 4 digits.
 - _Hash_: Replace the matched substring with a hashed value.
+- _Replace_: Replace the matched substring with a constant placeholder value such as `[Filtered]` or `[creditcard]`. Right now this value cannot be configured.
 
 ## Rule Types
 
-- _Custom Regular Expression_: Custom Perl-style regex (PCRE).
+- _Regex Matches_: Custom Perl-style regex (PCRE).
 - _Credit Card Numbers_: Any substrings that look like credit card numbers.
 - _Password Fields_: Any substrings that look like they may contain passwords. Any string that mentions passwords, auth tokens or credentials, any variable that is called `password` or `auth`.
 - _IP Addresses_: Any substrings that look like valid IPv4 or IPv6 addresses.
@@ -76,7 +76,22 @@ Sentry does not know if a local variable that looks like a credit card number ac
 
 ## Selectors
 
-Selectors allow you to restrict rules to certain parts of the event. This is useful to unconditionally remove certain data by variable/field name from the event, but can also be used to conservatively test rules on real data.
+Selectors allow you to restrict rules to certain parts of the event. This is useful to unconditionally remove certain data by event attribute, and can also be used to conservatively test rules on real data. A few examples:
+
+* `**` to scrub everything
+* `$error.value` to scrub in the exception message
+* `$message` to scrub the event-level log message
+* `extra.'My Value'` to scrub the key `My Value` in "Additional Data"
+* `extra.**` to scrub everything in "Additional Data"
+* `$http.headers.x-custom-token` to scrub the request header `X-Custom-Token`
+* `$user.ip_address` to scrub the user's IP address
+* `$frame.vars.foo` to scrub a stack trace frame variable called `foo`
+* `contexts.device.timezone` to scrub a key from the Device context
+* `tags.server_name` to scrub the tag `server_name`
+
+All key names are treated case-insensitively.
+
+### Writing a Selector
 
 Data scrubbing always works on the raw event payload. Keep in mind that some fields in the UI may be called differently in the JSON schema. When looking at an event there should always be a link called "JSON" present that allows you to see what the data scrubber sees.
 
@@ -107,7 +122,7 @@ Another example. Sentry knows about two kinds of error messages: the exception m
 Since the "error message" is taken from the `exception`'s `value`, and the "message" is taken from `logentry`, we would have to write the following to remove both from the event:
 
 ```
-[Remove] [Anything] from [exception.value]
+[Remove] [Anything] from [exception.values.*.value]
 [Remove] [Anything] from [logentry.formatted]
 ```
 
@@ -136,30 +151,17 @@ Select subsections by JSON-type using the following:
 
 Select known parts of the schema using the following:
 
-* `$exception` matches a single exception instance in `{"exception": {"values": [...]}}`
-* `$stacktrace` matches a stack trace instance
-* `$frame` matches a frame
-* `$request` matches the HTTP request context of an event
+* `$error` matches a single exception instance in `{"exception": {"values": [...]}}`
+* `$stack` matches a stack trace instance
+* `$frame` matches a frame in a stack trace
+* `$http` matches the HTTP request context of an event
 * `$user` matches the user context of an event
-* `$logentry` matches both the `logentry` attribute of an event as well as the `message` attribute
+* `$message` matches the top-level log message in `{"logentry": {"formatted": ...}}`
+* `$logentry` matches the `logentry` attribute of an event.
 * `$thread` matches a single thread instance in `{"threads": {"values": [...]}}`
 * `$breadcrumb` matches a single breadcrumb in `{"breadcrumbs": {"values": [...]}}`
 * `$span` matches a [trace span]({% link _documentation/performance/performance-glossary.md %}#span)
 * `$sdk` matches the SDK context in `{"sdk": ...}`
-
-#### Examples
-
-* Delete `event.user`:
-
-  ```
-  [Remove] [Anything] from [$user]
-  ```
-
-* Delete all frame-local variables:
-
-  ```
-  [Remove] [Anything] from [$frame.vars]
-  ```
 
 ### Escaping Special Characters
 

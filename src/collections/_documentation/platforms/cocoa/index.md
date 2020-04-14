@@ -2,8 +2,9 @@
 title: Cocoa
 ---
 
+<!-- WIZARD -->
 {% capture __alert_content -%}
-Version `5.0.0` is in beta.
+Version `5.0.0` is in beta. If you are not comfortable installing our `beta` SDK, our latest stable version can be found here. [4.x]({%- link _documentation/clients/cocoa/index.md -%})
 {%- endcapture -%}
 {%- include components/alert.html
   title="Note"
@@ -14,7 +15,6 @@ Version `5.0.0` is in beta.
 This is the documentation for our Cocoa SDK (Swift and Objective-C).
 If you are migrating from an older version, please consider our [Migration Guide](https://github.com/getsentry/sentry-cocoa/blob/master/MIGRATION.md). Also always make sure to follow the [changelog](https://github.com/getsentry/sentry-cocoa/blob/master/CHANGELOG.md)
 
-<!-- WIZARD -->
 ## Installation {#install}
 
 The SDK can be installed using [CocoaPods](http://cocoapods.org), [Carthage](https://github.com/Carthage/Carthage), or [Swift Package Manager](https://swift.org/package-manager/). This is the recommended SDK for both Swift and Objective-C projects.
@@ -31,7 +31,7 @@ platform :ios, '8.0'
 use_frameworks! # This is important
 
 target 'YourApp' do
-    pod 'Sentry', :git => 'https://github.com/getsentry/sentry-cocoa.git', :tag => '5.0.0-beta.0'
+    pod 'Sentry', :git => 'https://github.com/getsentry/sentry-cocoa.git', :tag => '5.0.0-beta.2'
 end
 ```
 <!-- {% sdk_version sentry.cocoa %} -->
@@ -43,7 +43,7 @@ Afterwards run `pod install`.
 To integrate Sentry into your Xcode project using Carthage, specify it in your _Cartfile_:
 
 ```ruby
-github "getsentry/sentry-cocoa" "5.0.0-beta.0"
+github "getsentry/sentry-cocoa" "5.0.0-beta.2"
 ```
 
 Run `carthage update` to download the framework and drag the built _Sentry.framework_ into your Xcode project.
