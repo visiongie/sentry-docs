@@ -33,18 +33,16 @@ If your monolithic app has multiple code bases, then create a Project for each o
 
 You can leverage Alerts and Issue Owners to make sure developers are only getting notified about the parts of the monolith that they are responsible for maintaining.
 
+[how many projects should I create](https://docs.sentry.io/guides/getting-started/#-how-many-projects-should-i-create  )
 
 #### DSN Keys
-**General Rule** 1 DSN Key for 1 Project
+**General Rule** - 1 DSN Key for 1 Project
 
-The only time you should use multiple DSN keys for 1 Project
-- you have tenants using your application software and want to keep track of them. However you could also do this using Tags (link)
-- you want to control the errors you accept per environment (dev, staging, prod) and so you create a DSN key for each environment, and you can control a separate rate-limit per DSN key.
+The only time you should use multiple DSN keys for a Project
+- you have multiple tenants accessing dedicated instances of your software/product. You could also do this using Tags (link)
+- you want to control the errors you accept per environment (dev, staging, prod) and so you create a DSN key for each environment, and you can control a separate rate-limit per DSN key. (beforeSend?)
 
 Bear in mind that Rate-Limiting is per DSN Key. (So you'd have to do it for every DSN Key for every project)
-
-**Resources:**  
-[how many projects should I create](https://docs.sentry.io/guides/getting-started/#-how-many-projects-should-i-create  )
 
 
 ### Releases
@@ -60,13 +58,15 @@ You can specify the release number yourself or you can use sentry-cli which will
 
 #### Why Releases?
 
-Releases allow you to track the health of your applications across releases. You'll see New Issues vs Resolved issues as well as all *Files Changed* and *Commits* and *Authors* for that Release. This is possible if you've setup your [Integration]({% link _documentation/guides/the-sentry-general/index.md %}#workflow--integrations) with your version control software.
+Releases allow you to track the health of your applications across releases. You'll see *New Issues vs Resolved issues* for the Release. This is possible if you've setup your [Integration]({% link _documentation/guides/the-sentry-general/index.md %}#workflow--integrations) with your version control software. **Releases** enable you to use [Suspect Commits](). On a given error's page, Sentry will show you which commits updated files that are in the error's stacktrace. Also upload your [Source Maps](https://docs.sentry.io/platforms/javascript/sourcemaps/).
 
 ![Releases View]({% asset guides/the-sentry-general/releases-view.png @path %})
 
-**Releases** enable you to use [Suspect Commits](). On a given error's page, Sentry will show you which commits updated files that are in the error's stacktrace.
+You'll also see the *Files Changed*, *Commits* and *Authors* per Release.  
+![Releases Commits]({% asset guides/the-sentry-general/releases-commits.png @path %})
 
-#### CI/CD and Releases
+
+#### Releases in CI/CD
 It's important to create the Release using `sentry-cli` in your CI/CD before deploying your code, so if a Release has no errors, then you can see that 0 count in the Releases Dashboard. Otherwise you have to wait for an Error to occur.
 
 If you trigger a build *and* new sentry Release on every commit in your CI/CD but only some of these get deployed to Production, that's okay because you'll be able to track the Releases in Sentry specifically from Production.
@@ -83,68 +83,97 @@ Sentry.init({
 })
 ```
 So you can leverage them in top level filters and Discover.
-(photo1)  
-(photo2)  
+![Environment Top Level Filter]({% asset guides/the-sentry-general/environment-top-level-filter.png @path %})
 
-## Define Your Data
-Sentry already provides you with a lot of context regarding the state of the code environment, device, part of your app, that it happened with.
+Do not create a separate Project for each of your environments.
 
-#### Tags
-Sentry SDK's set roughly 10 depending on the platform.
+[Environments](https://docs.sentry.io/enriching-error-data/environments/?platform=python)
 
-You can add more context. Some quick ideas:
-- feature flags
+## Define Your Event Context
+
+### Tags
+The Sentry SDKs sets roughly 10 Tag values for you depending on the platform.
+
+Anything mission-critical. Significant user events / business processes (signup, checkout). Lifecycle Methods, Mounting, Connections
+
+You can add more context. Some quick ideas
+- feature flags or user experience
+- product / user experience
+- customer segments and tenants
+- component/area of your app
+
+#### Tag Examples
 ```
-# keep track of a user experience, if it errors up
 Sentry.configureScope(scope => {
+      # Feature Flag
       scope.setTag("studioEditorEnabled", true);
+      
+      # Product of yours that your customers are using
+      scope.setTag("product", 'shipping');
+      # or
+      scope.setTag("shipping", true)
+        
+      # Know which customer / tenant of your software
+      scope.setTag("customer", 12345)
+      
+      # Component / area of app
+      scope.setTag("component", 'dashboard') # commentBox, commentBox: true
 });
 ```
-- customer segments
+
+You can view what custom tags users have set in Project Settings > Tags. Create custom Discover queries based around them.
+
+{% capture __alert_content -%}
+You don't have to use a Tag for everything. Good for reporting. The 'URL' tag on the event might already indicate what part of your app. The stack.filename if you wish to report via that. Breadcrumbs may reveal the info too, but those are not indexable/searchable.
+{%- endcapture -%}
+{%- include components/alert.html
+    title="Note"
+    content=__alert_content
+    level="warning"
+%}
+
+### Stack Trace
+The stack trace is part of the event. **Javascript** make sure you upload your **Source Maps**. Below is an example but reference [Source Maps](https://docs.sentry.io/platforms/javascript/sourcemaps/) for complete documentation. Don't forget your [Integration]({% link _documentation/guides/the-sentry-general/index.md %}#workflow--integrations) so can associate to a commit / Suspect Commits.
+
 ```
-# after loading in the user object
-Sentry.configureScope(scope => {
-      scope.setTag("customerType", "elite-status"); // custom-tag
-});
+# 1 Create Release
+sentry-cli releases -o <YOUR_ORG> new -p <YOUR_PROJECT> <RELEASE_NUMBER>
+
+#2 Associate Commits
+sentry-cli releases -o <YOUR_ORG> -p <YOUR_PROJECT> set-commits --auto <RELEASE_NUMBER>
+
+#3 Upload SourceMaps
+sentry-cli releases -o <YOUR_ORG> -p <YOUR_PROJECT> files <RELEASE_NUMBER> \
+      upload-sourcemaps --url-prefix "~/<PREFIX> --validate build/<PREFIX>
 ```
 
-component: 'scanner'
+The stack trace appears if it was sent with the native exception, by the language/framework run-time. Some languages by nature of design do not provide this, but can see Packge/Class and Function name as well as line number, like in Java.
 
-component: commentbox
+**Common Reasons for No Stacktrace**
+- Unhandled promise rejections.
+- Failed mounts/integrations.
+- 3rd party javascript, no source maps for these
 
-scanner: true 
-
-commentbox: true
-
-Mission-critical
-
-Significant user events (signup, checkout)
-
-Lifecycle Methods, Mounting, Connections
-
-View them from Project Settings > Tags
-
-Bear in mind you may be able to identify the errors from the above simply by the URL, which is already captured. as well as `stack.module`, `stack.filename`. (photo)
-
-#### Tags Source Maps
-Because the unminified Stacktrace is Your Data too
-
-Stacktrace is code, and caused exception
-
-#### Tags Front End
+#### Front End Tags
 Component (React/Angular) Initialization
 
-#### Tags Back End
+#### Back End Tags
 Middleware, for sessionId, transactionId, user
 modelId, entityId, decoders.js
 
-#### Breadcrumbs
+### Breadcrumbs
 In front-end, Redux actions are a great [example](https://blog.sentry.io/2016/08/24/redux-middleware-error-logging)
 
 If you're not familiar with what Breadcrumbs already capture, see [here](https://docs.sentry.io/enriching-error-data/breadcrumbs/?platform=python)
 
-#### Additional the Extra Data
-...
+### Extra Context
+Good for object/json data, key value pairs. What a user sees in the GUI could be different than what's in javascript memory or what's in the database.
+
+#### Extra Context Examples
+- Parts of Redux but do not recommend putting the entire redux tree, for sensitive information and size limitation concerns.
+- 'Shopping Cart' something user might Add/Remove CRUD a lot, this is prone to error.
+
+
 
 ## Filtering
 ### SDK Side
@@ -181,21 +210,23 @@ Inbound Data Filter - allowed domains (whitelist, blacklist)
 ## Sensitive Data
 If you don't send it, Sentry can't persist it.
 
+Advanced Data Scrubbing
+
 ## Workflow & Integrations
 If you have multiple dev teams working on 1 monolithic app, then configure your Alerts & Issue Owners based on the 'file path' that the error is coming from. This way, errors from ./src/* notify the 1 team who manages src/* while errors from something else like ./middleware/* go to the team that manages the middlewares. Order of precedence, so if you specify a fallback condition of ./*
 
-#### Alerts & Issue Owners
+### Alerts & Issue Owners
 ...configure your Alerts and Issue Owners based on the file / sub-directory or URL in the repo that's causing the error. This way they're routed to the appropriate teams responsible for those subdirectories of modules/code
 
 
-#### Suspect Commits
+### Suspect Commits
 where Sentry matches files in the error's stacktrace with commits that updated those files. which are commits that updated files that are in the error's stacktrace.
 
 ## Understanding Your Volume
 Photo? Guide on event quota management.
 Viewing it as client vs server side.
 
-#### Discover
+### Discover
 3 Types of Workflow
 1. wide angle, operations. management. ALL. tallies, statistics.
 2. problem areas. that you're concerned about. volume.
@@ -205,6 +236,9 @@ Viewing it as client vs server side.
 1. Projects (row items)
 2. Issues
 3. Events
+
+### Other
+Stats / Subscription / Issues page do's don'ts limitations
 
 ## Hosted vs Self-Hosted
 Thoughts, words. Guide on the migration.
