@@ -33,7 +33,10 @@ If your monolithic app has multiple code bases, then create a Project for each o
 
 You can leverage Alerts and Issue Owners to make sure developers are only getting notified about the parts of the monolith that they are responsible for maintaining.
 
-[how many projects should I create](https://docs.sentry.io/guides/getting-started/#-how-many-projects-should-i-create  )
+[how many projects should I create](https://docs.sentry.io/guides/getting-started/#-how-many-projects-should-i-create)
+
+#### Tracing
+Tracing for your Projects (link).
 
 #### DSN Keys
 **General Rule** - 1 DSN Key for 1 Project
@@ -161,6 +164,8 @@ Component (React/Angular) Initialization
 Middleware, for sessionId, transactionId, user
 modelId, entityId, decoders.js
 
+
+
 ### Breadcrumbs
 In front-end, Redux actions are a great [example](https://blog.sentry.io/2016/08/24/redux-middleware-error-logging)
 
@@ -169,10 +174,13 @@ If you're not familiar with what Breadcrumbs already capture, see [here](https:/
 ### Extra Context
 Good for object/json data, key value pairs. What a user sees in the GUI could be different than what's in javascript memory or what's in the database.
 
+
 #### Extra Context Examples
 - Parts of Redux but do not recommend putting the entire redux tree, for sensitive information and size limitation concerns.
 - 'Shopping Cart' something user might Add/Remove CRUD a lot, this is prone to error.
 
+### Tracing
+link...explanation...screenshot. note on A.M. docs, what is to come. screenshot!
 
 
 ## Filtering
@@ -183,7 +191,6 @@ Precaution - no idea if it's significant, less indicatino how many users. spikes
 
 Blacklist URL's
 
-
 based on event.exception test, event.info level
 
 based on event.tag key
@@ -192,25 +199,35 @@ based on event.tag key, value
 
 Also opportunity for Data Scrubbing (link to that section)
 
-
-
 ### Server Side
 per project.
 
-Inbound Filters
+#### Inbound Filters
+asdf
 
-Rate Limiting
+#### Rate Limiting
+asdf
 
-By Release
+#### By Release
+asdf
 
-Grouping (is not filtering, but)
+#### Grouping (is not filtering, but)
 
 Inbound Data Filter - allowed domains (whitelist, blacklist)
 
-## Sensitive Data
-If you don't send it, Sentry can't persist it.
+## Sensitive Data | PII
+If you don't send it, Sentry can't persist it. link to Security page.
 
-Advanced Data Scrubbing
+Link to Filtering > SDK Side, either remove what you don't want, or drop the event entirely by returning null.
+
+### Project Settings
+Project Settings > Data Privacy
+
+### Organization Settings
+Organization Settings > Security and Privacy
+
+### Data Scrubbing
+leverages a relay proxy server in front of our application servers. replace values with '\*\*\*\*\*' or drop it altogether. 
 
 ## Workflow & Integrations
 If you have multiple dev teams working on 1 monolithic app, then configure your Alerts & Issue Owners based on the 'file path' that the error is coming from. This way, errors from ./src/* notify the 1 team who manages src/* while errors from something else like ./middleware/* go to the team that manages the middlewares. Order of precedence, so if you specify a fallback condition of ./*
@@ -227,6 +244,8 @@ Photo? Guide on event quota management.
 Viewing it as client vs server side.
 
 ### Discover
+"Visibility"
+
 3 Types of Workflow
 1. wide angle, operations. management. ALL. tallies, statistics.
 2. problem areas. that you're concerned about. volume.
@@ -237,7 +256,7 @@ Viewing it as client vs server side.
 2. Issues
 3. Events
 
-### Other
+### Quota
 Stats / Subscription / Issues page do's don'ts limitations
 
 ## Hosted vs Self-Hosted
