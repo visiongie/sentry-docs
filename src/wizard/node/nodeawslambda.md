@@ -1,16 +1,12 @@
 ---
-draft: false
-categories: []
-toc: true
-title: AWS Lambda
-sidebar_order: 7
-tags: []
+name: AWS Lambda
+doc_link: https://docs.sentry.io/platforms/node/aws_lambda/
+support_level: production
+type: framework
 ---
 
-_(New in version x)_
-
 Create a deployment package on your local machine and install the required dependencies in the deployment package.
-For more information, see [AWS Lambda deployment package in Python](https://docs.aws.amazon.com/lambda/latest/dg/python-package.html).
+For more information, see [AWS Lambda deployment package in Node](https://docs.aws.amazon.com/lambda/latest/dg/nodejs-package.html).
 
 Install our Node.js SDK using `npm`:
 
@@ -46,16 +42,3 @@ Sentry.init({
 ```
 
 The timeout warning is sent only if the "timeout" in the Lambda Funtion configuration is set to a value greater than one second.
-
-## Behavior
-
-With the AWS Lambda integration enabled, the Node SDK will:
-
-- Automatically report all exceptions from your lambda functions
-- Issues reports automatically include:
-  - A link to the cloudwatch logs
-  - Function details
-  - sys.argv for the function
-  - AWS Request ID
-  - Function execution time (in milliseconds)
-  - Function version
