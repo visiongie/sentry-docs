@@ -15,12 +15,6 @@ SDKs in general, please visit the [Error Reporting](/error-reporting/quickstart/
 
 All our JavaScript-related SDKs provide the same API. Still, there are some differences between them which this section of the docs explains.
 
-<Alert level="" title="AWS Lambda"><markdown>
-
-AWS's Node runtime doesn't include a global error handler in the same way Node does, so the Node.js SDK has no way of catching unhandled exceptions. The only way to send events to Sentry is to manually use `Sentry.captureException()` or `Sentry.captureMessage()`.
-
-</markdown></Alert>
-
 ## Integrations
 
 All of our SDKs provide _Integrations_, similar to a plugin. All JavaScript SDKs provide default _Integrations_; please check details of a specific SDK to see which _Integrations_ it offers.
